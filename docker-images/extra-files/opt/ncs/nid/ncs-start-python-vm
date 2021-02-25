@@ -1,0 +1,33 @@
+#!/bin/sh
+
+# First component of PYTHONPATH is the python/ directory in our package
+PKG_PATH=$(dirname $(echo ${PYTHONPATH} | awk -F: '{ print $1 }'))
+
+# Look for virtualenv in our package and activate, if found
+if [ -n "${PKG_PATH}" ] && [ -f "${PKG_PATH}/pyvenv/bin/activate" ]; then
+    echo "Found virtualenv for ${PKG_NAME}, activating it";
+    . ${PKG_PATH}/pyvenv/bin/activate;
+fi
+
+pypath="${NCS_DIR}/src/ncs/pyapi"
+
+# Make sure everyone finds the NCS Python libraries at startup
+if [ "x$PYTHONPATH" != "x" ]; then
+    PYTHONPATH=${pypath}:$PYTHONPATH
+else
+    PYTHONPATH=${pypath}
+fi
+export PYTHONPATH
+
+if [ "$1" = "-u" ]; then
+    main="${pypath}/ncs_pyvm/upgrade.py"
+else
+    main="${pypath}/ncs_pyvm/startup.py"
+fi
+
+if [ -x "$(which python3)" ]; then
+    echo "Starting python3 -u $main $*"
+    exec python3 -u "$main" "$@"
+fi
+echo "Starting python -u $main $*"
+exec python -u "$main" "$@"
